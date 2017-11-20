@@ -1,4 +1,6 @@
 {
+  "name": "multisig-wallet",
+  "version": "0.0.1",
   "scripts": {
     "test": "ts-node -r tsconfig-paths/register $(npm bin)/truffle test",
     "testrpc": "testrpc"
