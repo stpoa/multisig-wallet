@@ -10,11 +10,12 @@ declare interface Contract<T> {
 }
 
 declare interface Wallet {
-  owner: String,
+  creator: String,
 }
 
 declare interface WalletInstance {
-  owner: () => Promise<string>,
+  creator: () => Promise<string>,
+  owners: (index: number) => Promise<string>,
 }
 
 declare interface MetaCoinInstance {
@@ -24,16 +25,15 @@ declare interface MetaCoinInstance {
 }
 
 declare interface WalletContract {
-  'new'(options?: TransactionOptions): WalletInstance,
+  'new'(owners: string[], options?: TransactionOptions): WalletInstance,
   deployed(): Promise<Wallet>,
   at(address: string): Wallet,
-  owner(): Promise<String>,
+  creator(): Promise<string>,
+  owners(index: number): Promise<string>,
 }
 
 interface Artifacts {
   require(name: "./MetaCoin.sol"): Contract<MetaCoinInstance>,
   require(name: "./Wallet.sol"): WalletContract,
 }
-
-
 
