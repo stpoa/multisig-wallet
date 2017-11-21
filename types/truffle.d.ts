@@ -1,39 +1,70 @@
-declare type _contractTest = (accounts: string[]) => void;
-declare interface TransactionMeta {
-  from: string,
-}
+declare module 'truffle' {
+  import { BigNumber } from 'bignumber.js';
+  import { Address } from 'web3';
 
-declare interface Contract<T> {
-  "new"(): Promise<T>,
-  deployed(): Promise<T>,
-  at(address: string): T,
-}
+  interface ContractBase {
+    address: Address;
+  }
 
-declare interface Wallet {
-  creator: String,
-}
+  interface DeployedContractBase extends ContractBase {
+    balance(): Promise<BigNumber>;
+  }
 
-declare interface WalletInstance {
-  creator: () => Promise<string>,
-  owners: (index: number) => Promise<string>,
-}
+  interface Contract<T> extends ContractBase {
+    deployed(): Promise<T>;
+  }
 
-declare interface MetaCoinInstance {
-  getBalance(account: string): number,
-  getBalanceInEth(account: string): number,
-  sendCoin(account: string, amount: number, meta?: TransactionMeta): Promise<void>,
-}
+  interface Artifacts {
+    require(name: string): ContractBase;
+  }
 
-declare interface WalletContract {
-  'new'(owners: string[], options?: TransactionOptions): WalletInstance,
-  deployed(): Promise<Wallet>,
-  at(address: string): Wallet,
-  creator(): Promise<string>,
-  owners(index: number): Promise<string>,
-}
+  interface Deployer extends Promise<void> {
+    deploy(object: ContractBase): Promise<void>;
 
-interface Artifacts {
-  require(name: "./MetaCoin.sol"): Contract<MetaCoinInstance>,
-  require(name: "./Wallet.sol"): WalletContract,
-}
+    link(
+      library: ContractBase,
+      contracts: ContractBase | [ContractBase]
+    ): Promise<void>;
+  }
 
+  interface ContractContextDefinition extends Mocha.IContextDefinition {
+    (
+      description: string,
+      callback: (accounts: Address[]) => void
+    ): Mocha.ISuite;
+  }
+  type TransactionOptions = {
+    from?: Address;
+    gas?: number | string | BigNumber;
+    gasPrice?: number | string | BigNumber;
+  };
+
+  type TransactionReceipt = {
+    transactionHash: string;
+    transactionIndex: number;
+    blockHash: string;
+    blockNumber: number;
+    gasUsed: number;
+    cumulativeGasUsed: number;
+    contractAddress?: Address;
+    logs: [TransactionLog];
+  };
+
+  type TransactionLog = {
+    logIndex: number;
+    transactionIndex: number;
+    transactionHash: string;
+    blockHash: string;
+    blockNumber: number;
+    address: Address;
+    type: string;
+    event: string;
+    args: any;
+  };
+
+  type TransactionResult = {
+    tx: string;
+    receipt: TransactionReceipt;
+    logs: [TransactionLog];
+  };
+}
