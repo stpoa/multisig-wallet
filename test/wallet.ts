@@ -10,6 +10,9 @@ contract('Wallet', (accounts) => {
   const OWNER_ONE = accounts[0];
   const OWNER_TWO = accounts[1];
   const OWNER_THREE = accounts[2];
+  const NOT_OWNER = accounts[9];
+  const DEPOSIT_AMOUNT = fromEtherToWei(2);
+  const TRANSFER_AMOUNT = fromEtherToWei(1);
 
   let instance: Wallet;
 
@@ -39,10 +42,15 @@ contract('Wallet', (accounts) => {
 
   it('deposits ether', async () => {
     const balanceBefore = await getBalance(OWNER_ONE);
-    const value = fromEtherToWei(1);
-    await instance.deposit({ from: OWNER_ONE, value: value });
+    await instance.deposit({ from: OWNER_ONE, value: DEPOSIT_AMOUNT });
     const balanceAfter = await getBalance(OWNER_ONE);
 
-    assertEtherAlmostEqual(balanceAfter, balanceBefore.sub(value));
+    assertEtherAlmostEqual(balanceAfter, balanceBefore.sub(DEPOSIT_AMOUNT));
   });
+
+  /* it('allows to initiate transfer from owner users', async () => {
+    const balanceBefore = getBalance(OWNER_ONE);
+    await instance.transfer(TRANSFER_AMOUNT, { from: OWNER_ONE });
+    const balanceAfter = getBalance(OWNER_ONE);
+  }); */
 });
