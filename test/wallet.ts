@@ -1,7 +1,7 @@
 const WalletContract = artifacts.require('./Wallet.sol');
 
 import { assert } from 'chai';
-import { assertEtherAlmostEqual, getBalance } from './helpers';
+import { assertEtherAlmostEqual, getBalance, fromEtherToWei } from './helpers';
 import { WalletContract, Wallet } from 'types/globals';
 
 contract('Wallet', (accounts) => {
@@ -37,11 +37,12 @@ contract('Wallet', (accounts) => {
     assert.isTrue(isOwner);
   });
 
-  /* it('deposits ether', async () => {
+  it('deposits ether', async () => {
     const balanceBefore = await getBalance(OWNER_ONE);
-    // await instance.deposit({ from: OWNER_ONE });
+    const value = fromEtherToWei(1);
+    await instance.deposit({ from: OWNER_ONE, value: value });
     const balanceAfter = await getBalance(OWNER_ONE);
 
-    assertEtherAlmostEqual(balanceBefore, balanceAfter);
-  }); */
+    assertEtherAlmostEqual(balanceAfter, balanceBefore.sub(value));
+  });
 });

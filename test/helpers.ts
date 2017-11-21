@@ -90,7 +90,7 @@ export function assertEtherAlmostEqual(
   return assertNumberAlmostEqual(actual, expect, epsilon, ETH_DECIMALS);
 }
 
-export function toEther(num: number | string) {
+export function fromEtherToWei(num: number | string) {
   return web3.toWei(num, 'ether');
 }
 

@@ -13,6 +13,7 @@ declare type TransactionOptions = {
   from?: string;
   gas?: number;
   gasPrice?: number;
+  value?: number | string;
 };
 
 declare type TransactionReceipt = {
@@ -61,7 +62,7 @@ declare interface Wallet {
   owners(index: number): Promise<string>;
   isOwner(address: string): boolean;
   transfer(value: number): Promise<TransactionResult>;
-  deposit(): Promise<TransactionResult>;
+  deposit(options?: TransactionOptions): Promise<TransactionResult>;
 }
 
 declare interface Migrations {

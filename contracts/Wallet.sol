@@ -19,7 +19,7 @@ contract Wallet {
     //-- Events
     //event Deposited(address, uint);
 
-    // Methods
+    //-- Methods
     function Wallet(address[] _owners) public {
         creator = msg.sender;
         owners = _owners;
@@ -29,11 +29,15 @@ contract Wallet {
         }
     }
 
-    /* function deposit () public payable {
-        Deposited(msg.sender, msg.value);
+    function getBalance () public view returns (uint) {
+        return this.balance;
     }
 
-    function transfer (uint _value) public {
+    function deposit () public payable {
+        //Deposited(msg.sender, msg.value);
+    }
+
+    /* function transfer (uint _value) public {
         msg.sender.transfer(_value);
     } */
 
