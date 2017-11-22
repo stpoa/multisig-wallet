@@ -11,6 +11,10 @@ contract Wallet {
     mapping (bytes32 => uint) public confirmationCounts;
     mapping (bytes32 => bool) public executed;
 
+    bytes32 public proposedNewOwnersHash;
+    mapping (address => bool) public votesForNewOwners;
+    uint public votesForNewOwnersCount;
+
     //--- Events
     event Deposited(address user, uint value);
     event Transferred(address destination, uint value);
@@ -28,10 +32,35 @@ contract Wallet {
         setOwners(_owners);
     }
 
-    /* function initOwnersChange (address[] _newOwners) public onlyowner {
-        setOwners(_newOwners);
-    } */
-   
+    function changeOwner (address[] _newOwners) public onlyowner {
+        bytes32 _newOwnersHash = keccak256(_newOwners, owners);
+
+        if (_newOwnersHash == proposedNewOwnersHash) {
+            // Check if not voted already
+            require(!votesForNewOwners[msg.sender]);
+
+            // Vote for proposal
+            votesForNewOwners[msg.sender] = true;
+            votesForNewOwnersCount++;
+        } else {
+            // Reset votes and create new proposal
+            resetNewOwnersVotes();
+            proposedNewOwnersHash = _newOwnersHash;
+            votesForNewOwners[msg.sender] = true;
+            votesForNewOwnersCount = 1;
+        }
+
+        if (changeOwnerConfirmedByAll()) {
+            // Execute owners change
+            resetNewOwnersVotes();
+            setOwners(_newOwners);
+        }
+    }
+
+    function changeOwnerConfirmedByAll () public view returns (bool) {
+        return votesForNewOwnersCount == owners.length;
+    }
+
     function getBalance () public view returns (uint) {
         return this.balance;
     }
@@ -74,6 +103,13 @@ contract Wallet {
         for (uint j = 0; j < newOwners.length; ++j) {
             isOwner[newOwners[j]] = true;
         }
+    }
+
+    function resetNewOwnersVotes () private {
+        for (uint i = 0; i < owners.length; ++i) {
+            votesForNewOwners[owners[i]] = false;
+        }
+        votesForNewOwnersCount = 0;
     }
 
     function executeTransfer (address destination, uint value) private onlyowner {
