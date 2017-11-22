@@ -1,7 +1,7 @@
 const WalletContract = artifacts.require('./Wallet.sol');
 
 import { assert } from 'chai';
-import { assertEtherAlmostEqual, getBalance, fromEtherToWei } from './helpers';
+import { assertEtherAlmostEqual, getBalance, fromEtherToWei, findLastLog } from './helpers';
 import { WalletContract, Wallet } from 'types/globals';
 
 contract('Wallet', (accounts) => {
@@ -11,14 +11,16 @@ contract('Wallet', (accounts) => {
   const OWNER_TWO = accounts[1];
   const OWNER_THREE = accounts[2];
   const NOT_OWNER = accounts[9];
+  const OWNERS = [OWNER_ONE, OWNER_TWO, OWNER_THREE];
   const DEPOSIT_AMOUNT = fromEtherToWei(2);
   const TRANSFER_AMOUNT = fromEtherToWei(1);
+  // const EXPECTED_NEW_OWNER = accounts[3];
 
   let instance: Wallet;
 
   beforeEach(async () => {
     instance = await WalletContract.new(
-      [OWNER_ONE, OWNER_TWO, OWNER_THREE],
+      OWNERS,
       { from: deployerAccount }
     );
   });
@@ -28,7 +30,7 @@ contract('Wallet', (accounts) => {
     assert.equal(creator, deployerAccount);
   });
 
-  it('assigns owners', async () => {
+  it('assigns proper owners on creation', async () => {
     const ownerOne: string = await instance.owners(0);
     const ownerTwo: string = await instance.owners(1);
     assert.equal(ownerOne, OWNER_ONE);
@@ -48,9 +50,12 @@ contract('Wallet', (accounts) => {
     assertEtherAlmostEqual(balanceAfter, balanceBefore.sub(DEPOSIT_AMOUNT));
   });
 
-  /* it('allows to initiate transfer from owner users', async () => {
-    const balanceBefore = getBalance(OWNER_ONE);
-    await instance.transfer(TRANSFER_AMOUNT, { from: OWNER_ONE });
-    const balanceAfter = getBalance(OWNER_ONE);
-  }); */
+  it('confirms a transfer', async () => {
+    const trans = await instance.transfer(OWNER_ONE, TRANSFER_AMOUNT, { from: OWNER_ONE });
+    const log = findLastLog(trans, 'TransferCalled');
+    const event = log.args;
+    const confirmationCount = await instance.confirmationCounts(event.transactionHash);
+
+    assert.equal(confirmationCount.toString(), '1');
+  });
 });

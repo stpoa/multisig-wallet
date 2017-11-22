@@ -1,5 +1,8 @@
+import { BigNumber } from 'bignumber.js';
 import { PromiEvent } from "web3/types";
 import * as Web3 from 'web3';
+import { TransactionResult } from 'truffle';
+
 
 declare interface ContractBase {
   address: string;
@@ -39,11 +42,11 @@ declare type TransactionLog = {
   args: any;
 };
 
-declare type TransactionResult = {
+/* declare type TransactionResult = {
   tx: string;
   receipt: TransactionReceipt;
   logs: [TransactionLog];
-};
+}; */
 
 declare interface MigrationsContract extends Contract<Migrations> {
   'new'(options?: TransactionOptions): Promise<Migrations>;
@@ -59,9 +62,10 @@ declare interface WalletContract extends Contract<Wallet> {
 
 declare interface Wallet {
   creator(options?: TransactionOptions): Promise<string>;
+  confirmationCounts(transactionHahs: String): Promise<BigNumber>;
   owners(index: number, options?: TransactionOptions): Promise<string>;
   isOwner(address: string, options?: TransactionOptions): boolean;
-  transfer(value: number, options?: TransactionOptions): Promise<TransactionResult>;
+  transfer(destination: string, value: number, options?: TransactionOptions): Promise<TransactionResult>;
   deposit(options?: TransactionOptions): Promise<TransactionResult>;
 }
 
