@@ -78,6 +78,7 @@ contract Wallet {
 
     function executeTransfer (address destination, uint value) private onlyowner {
         destination.transfer(value);
+        Transferred(destination, value);
     }
 
 }

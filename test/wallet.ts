@@ -12,17 +12,14 @@ contract('Wallet', (accounts) => {
   const OWNER_THREE = accounts[2];
   const NOT_OWNER = accounts[9];
   const OWNERS = [OWNER_ONE, OWNER_TWO, OWNER_THREE];
-  const DEPOSIT_AMOUNT = fromEtherToWei(2);
+  const DEPOSIT_AMOUNT = fromEtherToWei(5);
   const TRANSFER_AMOUNT = fromEtherToWei(1);
   // const EXPECTED_NEW_OWNER = accounts[3];
 
   let instance: Wallet;
 
   beforeEach(async () => {
-    instance = await WalletContract.new(
-      OWNERS,
-      { from: deployerAccount }
-    );
+    instance = await WalletContract.new(OWNERS, { from: deployerAccount });
   });
 
   it('creates a wallet and assigns an owner', async () => {
@@ -56,6 +53,22 @@ contract('Wallet', (accounts) => {
     const event = log.args;
     const confirmationCount = await instance.confirmationCounts(event.transactionHash);
 
-    assert.equal(confirmationCount.toString(), '1');
+    assert.equal('1', confirmationCount.toString());
+  });
+
+  it('starts a transaction', async () => {
+    const balanceBefore = await getBalance(OWNER_ONE);
+
+    // Deposit
+    await instance.deposit({ from: OWNER_ONE, value: DEPOSIT_AMOUNT });
+
+    // Transfer
+    await instance.transfer(OWNER_ONE, TRANSFER_AMOUNT, { from: OWNER_ONE });
+    await instance.transfer(OWNER_ONE, TRANSFER_AMOUNT, { from: OWNER_TWO });
+    await instance.transfer(OWNER_ONE, TRANSFER_AMOUNT, { from: OWNER_THREE });
+
+    const balanceAfter = await getBalance(OWNER_ONE);
+
+    assertEtherAlmostEqual(balanceAfter, balanceBefore.sub(DEPOSIT_AMOUNT).add(TRANSFER_AMOUNT));
   });
 });

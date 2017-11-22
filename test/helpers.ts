@@ -4,7 +4,7 @@ import { TransactionLog, TransactionResult } from 'truffle';
 import { Address, Callback, TxData } from 'web3';
 
 const ETH_DECIMALS = 18;
-const DEFAULT_ACCEPTABLE_ERROR: string = web3.toWei(5, 'finney');
+const DEFAULT_ACCEPTABLE_ERROR: string = web3.toWei(10, 'finney');
 
 /*
 export async function assertThrowsInvalidOpcode(func: () => void) {
