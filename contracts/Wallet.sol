@@ -47,15 +47,12 @@ contract Wallet {
         return false;
     }
 
-    function changeOwnerConfirmedByAll () public view returns (bool) {
-        return ownersChangeProposal.votesCount == owners.length;
-    }
-
+    //--- Public methods for testing
     function getBalance () public view returns (uint) {
         return this.balance;
     }
 
-    function confirmationCount(bytes32 transactionHash) public view returns (uint) {
+    function confirmationsCount (bytes32 transactionHash) public view returns (uint) {
         return transactions[transactionHash].confirmationsCount;
     }
 
@@ -79,7 +76,7 @@ contract Wallet {
         transactions[_transactionHash].confirmationsCount++;
 
         // Execute transfer
-        if (isConfirmedByAll(_transactionHash)) {
+        if (transferConfirmedByAll(_transactionHash)) {
             clearTransaction(_transactionHash);
             executeTransfer(destination, value);
         }
@@ -116,8 +113,12 @@ contract Wallet {
     }
 
     //--- Private Methods
-    function isConfirmedByAll (bytes32 transactionHash) private view returns (bool) {
+    function transferConfirmedByAll (bytes32 transactionHash) private view returns (bool) {
         return transactions[transactionHash].confirmationsCount == owners.length;
+    }
+
+    function changeOwnerConfirmedByAll () private view returns (bool) {
+        return ownersChangeProposal.votesCount == owners.length;
     }
 
     function setOwners (address[] newOwners) private {

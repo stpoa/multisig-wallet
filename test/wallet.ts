@@ -46,9 +46,9 @@ contract('Wallet', (accounts) => {
     const trans = await instance.transfer(OWNER_ONE, TRANSFER_AMOUNT, { from: OWNER_ONE });
     const log = findLastLog(trans, 'TransferCalled');
     const event = log.args;
-    const confirmationCount = await instance.confirmationCount(event.transactionHash);
+    const confirmationsCount = await instance.confirmationsCount(event.transactionHash);
 
-    assert.equal('1', confirmationCount.toString());
+    assert.equal('1', confirmationsCount.toString());
   });
 
   it('starts a transaction', async () => {
@@ -66,4 +66,6 @@ contract('Wallet', (accounts) => {
 
     assertEtherAlmostEqual(balanceAfter, balanceBefore.sub(DEPOSIT_AMOUNT).add(TRANSFER_AMOUNT));
   });
+
+
 });
