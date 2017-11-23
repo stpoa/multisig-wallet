@@ -100,18 +100,22 @@ contract Wallet {
             ownersChangeProposal.votes[msg.sender] = true;
             ownersChangeProposal.votesCount++;
         } else {
-            // Reset votes and create new proposal
-            resetNewOwnersVotes();
+            // Clear proposal and create new one
+            clearOwnersChangeProposal();
             ownersChangeProposal.newOwnersHash = _newOwnersHash;
             ownersChangeProposal.votes[msg.sender] = true;
             ownersChangeProposal.votesCount = 1;
         }
 
         if (changeOwnerConfirmedByAll()) {
-            // Execute owners change
-            resetNewOwnersVotes();
+            // Clear proposal and execute owners change
+            clearOwnersChangeProposal();
             setOwners(_newOwners);
         }
+    }
+
+    function cancelChangeOwners () public onlyowner {
+        clearOwnersChangeProposal();
     }
 
     //--- Private Methods
@@ -119,11 +123,11 @@ contract Wallet {
         owners = newOwners;
     }
 
-    function resetNewOwnersVotes () private {
+    function clearOwnersChangeProposal () private {
         for (uint i = 0; i < owners.length; ++i) {
-            ownersChangeProposal.votes[owners[i]] = false;
+            delete ownersChangeProposal.votes[owners[i]];
         }
-        ownersChangeProposal.votesCount = 0;
+        delete ownersChangeProposal;
     }
 
     function executeTransfer (address destination, uint value) private onlyowner {
