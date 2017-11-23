@@ -7,7 +7,7 @@ contract Wallet {
     struct TransactionProposal {
         mapping(address => bool) confirmedBy;
         uint confirmationsCount;
-        bool executed;
+        bool initiated;
     }
 
     struct OwnersChangeProposal {
@@ -59,10 +59,6 @@ contract Wallet {
         return transactions[transactionHash].confirmationsCount;
     }
 
-    function isConfirmedByAll (bytes32 transactionHash) public view onlyowner returns (bool) {
-        return transactions[transactionHash].confirmationsCount == owners.length;
-    }
-
     //--- Public payable methods
     function deposit () public payable {
         Deposited(msg.sender, msg.value);
@@ -70,23 +66,24 @@ contract Wallet {
 
     //--- Public restricted to owner methods
     function transfer (address destination, uint value) public onlyowner {
-        bytes32 transactionHash = keccak256(destination, value, owners);
+        bytes32 _transactionHash = keccak256(destination, value, owners);
 
-        // Check if user already confirmed and if already all confirmations
-        require(!transactions[transactionHash].confirmedBy[msg.sender]);
-        require(!transactions[transactionHash].executed);
+        // Check if user already confirmed
+        require(!transactions[_transactionHash].confirmedBy[msg.sender]);
+
+        // Set transaciton to initiated
+        !transactions[_transactionHash].initiated && (transactions[_transactionHash].initiated = true);
 
         // Confirm transfer
-        transactions[transactionHash].confirmedBy[msg.sender] = true;
-        transactions[transactionHash].confirmationsCount++;
+        transactions[_transactionHash].confirmedBy[msg.sender] = true;
+        transactions[_transactionHash].confirmationsCount++;
 
         // Execute transfer
-        if (isConfirmedByAll(transactionHash)) {
-            delete transactions[transactionHash].confirmationsCount;
-            transactions[transactionHash].executed = true;
+        if (isConfirmedByAll(_transactionHash)) {
+            clearTransaction(_transactionHash);
             executeTransfer(destination, value);
         }
-        TransferCalled(transactionHash, msg.sender);
+        TransferCalled(_transactionHash, msg.sender);
     }
 
     function changeOwner (address[] _newOwners) public onlyowner {
@@ -119,6 +116,10 @@ contract Wallet {
     }
 
     //--- Private Methods
+    function isConfirmedByAll (bytes32 transactionHash) private view returns (bool) {
+        return transactions[transactionHash].confirmationsCount == owners.length;
+    }
+
     function setOwners (address[] newOwners) private {
         owners = newOwners;
     }
@@ -128,6 +129,13 @@ contract Wallet {
             delete ownersChangeProposal.votes[owners[i]];
         }
         delete ownersChangeProposal;
+    }
+
+    function clearTransaction (bytes32 _transactionHash) private {
+        for (uint i = 0; i < owners.length; ++i) {
+            delete transactions[_transactionHash].confirmedBy[owners[i]];
+        }
+        delete transactions[_transactionHash];
     }
 
     function executeTransfer (address destination, uint value) private onlyowner {
