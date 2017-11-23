@@ -4,19 +4,22 @@ pragma solidity 0.4.18;
 contract Wallet {
 
     //--- Strcutures
-    struct Transaction {
+    struct TransactionProposal {
         mapping(address => bool) confirmedBy;
         uint confirmationsCount;
         bool executed;
     }
 
+    struct OwnersChangeProposal {
+        bytes32 newOwnersHash;
+        mapping (address => bool) votes;
+        uint votesCount;
+    }
+
     //--- Variables
     address[] public owners;
-    mapping (bytes32 => Transaction) public transactions;
-
-    bytes32 public proposedNewOwnersHash;
-    mapping (address => bool) public votesForNewOwners;
-    uint public votesForNewOwnersCount;
+    mapping (bytes32 => TransactionProposal) public transactions;
+    OwnersChangeProposal public ownersChangeProposal;
 
     //--- Events
     event Deposited(address user, uint value);
@@ -45,7 +48,7 @@ contract Wallet {
     }
 
     function changeOwnerConfirmedByAll () public view returns (bool) {
-        return votesForNewOwnersCount == owners.length;
+        return ownersChangeProposal.votesCount == owners.length;
     }
 
     function getBalance () public view returns (uint) {
@@ -86,6 +89,31 @@ contract Wallet {
         TransferCalled(transactionHash, msg.sender);
     }
 
+    function changeOwner (address[] _newOwners) public onlyowner {
+        bytes32 _newOwnersHash = keccak256(_newOwners, owners);
+
+        if (_newOwnersHash == ownersChangeProposal.newOwnersHash) {
+            // Check if not voted already
+            require(!ownersChangeProposal.votes[msg.sender]);
+
+            // Vote for proposal
+            ownersChangeProposal.votes[msg.sender] = true;
+            ownersChangeProposal.votesCount++;
+        } else {
+            // Reset votes and create new proposal
+            resetNewOwnersVotes();
+            ownersChangeProposal.newOwnersHash = _newOwnersHash;
+            ownersChangeProposal.votes[msg.sender] = true;
+            ownersChangeProposal.votesCount = 1;
+        }
+
+        if (changeOwnerConfirmedByAll()) {
+            // Execute owners change
+            resetNewOwnersVotes();
+            setOwners(_newOwners);
+        }
+    }
+
     //--- Private Methods
     function setOwners (address[] newOwners) private {
         owners = newOwners;
@@ -93,9 +121,9 @@ contract Wallet {
 
     function resetNewOwnersVotes () private {
         for (uint i = 0; i < owners.length; ++i) {
-            votesForNewOwners[owners[i]] = false;
+            ownersChangeProposal.votes[owners[i]] = false;
         }
-        votesForNewOwnersCount = 0;
+        ownersChangeProposal.votesCount = 0;
     }
 
     function executeTransfer (address destination, uint value) private onlyowner {
