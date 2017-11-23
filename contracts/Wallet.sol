@@ -37,6 +37,13 @@ contract Wallet {
         setOwners(_owners);
     }
 
+    //--- Fallback function
+    function() public payable {
+        if (msg.value > 0) {
+            Deposited(msg.sender, msg.value);
+        }
+    }
+
     //--- Public view methods
     function isOwner(address _user) public view returns (bool) {
         for (uint256 i = 0; i < owners.length; ++i) {
