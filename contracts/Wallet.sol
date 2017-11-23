@@ -12,7 +12,6 @@ contract Wallet {
 
     //--- Variables
     address[] public owners;
-    mapping (address => bool) public isOwner;
     mapping (bytes32 => Transaction) public transactions;
 
     bytes32 public proposedNewOwnersHash;
@@ -26,38 +25,23 @@ contract Wallet {
 
     //--- Modifiers
     modifier onlyowner {
-        require(isOwner[msg.sender]);
+        require(isOwner(msg.sender));
         _;
     }
 
-    //--- Methods
-    function Wallet(address[] _owners) public {
+    //--- Constructor
+    function Wallet (address[] _owners) public {
         setOwners(_owners);
     }
 
-    function changeOwner (address[] _newOwners) public onlyowner {
-        bytes32 _newOwnersHash = keccak256(_newOwners, owners);
-
-        if (_newOwnersHash == proposedNewOwnersHash) {
-            // Check if not voted already
-            require(!votesForNewOwners[msg.sender]);
-
-            // Vote for proposal
-            votesForNewOwners[msg.sender] = true;
-            votesForNewOwnersCount++;
-        } else {
-            // Reset votes and create new proposal
-            resetNewOwnersVotes();
-            proposedNewOwnersHash = _newOwnersHash;
-            votesForNewOwners[msg.sender] = true;
-            votesForNewOwnersCount = 1;
+    //--- Public view methods
+    function isOwner (address _user) public view returns (bool) {
+        for (uint i = 0; i < owners.length; ++i) {
+            if (owners[i] == _user) {
+                return true;
+            }
         }
-
-        if (changeOwnerConfirmedByAll()) {
-            // Execute owners change
-            resetNewOwnersVotes();
-            setOwners(_newOwners);
-        }
+        return false;
     }
 
     function changeOwnerConfirmedByAll () public view returns (bool) {
@@ -68,10 +52,20 @@ contract Wallet {
         return this.balance;
     }
 
+    function confirmationCount(bytes32 transactionHash) public view returns (uint) {
+        return transactions[transactionHash].confirmationsCount;
+    }
+
+    function isConfirmedByAll (bytes32 transactionHash) public view onlyowner returns (bool) {
+        return transactions[transactionHash].confirmationsCount == owners.length;
+    }
+
+    //--- Public payable methods
     function deposit () public payable {
         Deposited(msg.sender, msg.value);
     }
 
+    //--- Public restricted to owner methods
     function transfer (address destination, uint value) public onlyowner {
         bytes32 transactionHash = keccak256(destination, value, owners);
 
@@ -92,24 +86,9 @@ contract Wallet {
         TransferCalled(transactionHash, msg.sender);
     }
 
-    function confirmationCount(bytes32 transactionHash) public view returns (uint) {
-        return transactions[transactionHash].confirmationsCount;
-    }
-
-    function isConfirmedByAll (bytes32 transactionHash) public view onlyowner returns (bool) {
-        return transactions[transactionHash].confirmationsCount == owners.length;
-    }
-
     //--- Private Methods
     function setOwners (address[] newOwners) private {
         owners = newOwners;
-
-        for (uint i = 0; i < owners.length; ++i) {
-            isOwner[owners[i]] = false;
-        }
-        for (uint j = 0; j < newOwners.length; ++j) {
-            isOwner[newOwners[j]] = true;
-        }
     }
 
     function resetNewOwnersVotes () private {
