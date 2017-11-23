@@ -3,13 +3,18 @@ pragma solidity 0.4.18;
 
 contract Wallet {
 
+    //--- Strcutures
+    struct Transaction {
+        mapping(address => bool) confirmedBy;
+        uint confirmationsCount;
+        bool executed;
+    }
+
     //--- Variables
     address public creator;
     address[] public owners;
     mapping (address => bool) public isOwner;
-    mapping (bytes32 => mapping(address => bool)) public transactions;
-    mapping (bytes32 => uint) public confirmationCounts;
-    mapping (bytes32 => bool) public executed;
+    mapping (bytes32 => Transaction) public transactions;
 
     bytes32 public proposedNewOwnersHash;
     mapping (address => bool) public votesForNewOwners;
@@ -73,24 +78,28 @@ contract Wallet {
         bytes32 transactionHash = keccak256(destination, value, owners);
 
         // Check if user already confirmed and if already all confirmations
-        require(!transactions[transactionHash][msg.sender]);
-        require(!executed[transactionHash]);
+        require(!transactions[transactionHash].confirmedBy[msg.sender]);
+        require(!transactions[transactionHash].executed);
 
         // Confirm transfer
-        transactions[transactionHash][msg.sender] = true;
-        confirmationCounts[transactionHash]++;
+        transactions[transactionHash].confirmedBy[msg.sender] = true;
+        transactions[transactionHash].confirmationsCount++;
 
         // Execute transfer
         if (isConfirmedByAll(transactionHash)) {
-            delete confirmationCounts[transactionHash];
-            executed[transactionHash] = true;
+            delete transactions[transactionHash].confirmationsCount;
+            transactions[transactionHash].executed = true;
             executeTransfer(destination, value);
         }
         TransferCalled(transactionHash, msg.sender);
     }
 
+    function confirmationCount(bytes32 transactionHash) public view returns (uint) {
+        return transactions[transactionHash].confirmationsCount;
+    }
+
     function isConfirmedByAll (bytes32 transactionHash) public view onlyowner returns (bool) {
-        return confirmationCounts[transactionHash] == owners.length;
+        return transactions[transactionHash].confirmationsCount == owners.length;
     }
 
     //--- Private Methods

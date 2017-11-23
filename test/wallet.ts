@@ -51,7 +51,8 @@ contract('Wallet', (accounts) => {
     const trans = await instance.transfer(OWNER_ONE, TRANSFER_AMOUNT, { from: OWNER_ONE });
     const log = findLastLog(trans, 'TransferCalled');
     const event = log.args;
-    const confirmationCount = await instance.confirmationCounts(event.transactionHash);
+    const confirmationCount = await instance.confirmationCount(event.transactionHash);
+    console.log(confirmationCount);
 
     assert.equal('1', confirmationCount.toString());
   });
