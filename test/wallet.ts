@@ -5,21 +5,20 @@ import { assertEtherAlmostEqual, getBalance, fromEtherToWei, findLastLog } from 
 import { WalletContract, Wallet } from 'types/globals';
 
 contract('Wallet', (accounts) => {
-  const defaultAccount = accounts[0];
-  const deployerAccount = accounts[1];
   const OWNER_ONE = accounts[0];
   const OWNER_TWO = accounts[1];
   const OWNER_THREE = accounts[2];
+  const NEW_OWNER = accounts[3];
   const NOT_OWNER = accounts[9];
   const OWNERS = [OWNER_ONE, OWNER_TWO, OWNER_THREE];
+  const NEW_OWNERS = [OWNER_ONE, OWNER_TWO, NEW_OWNER];
   const DEPOSIT_AMOUNT = fromEtherToWei(5);
   const TRANSFER_AMOUNT = fromEtherToWei(1);
-  // const EXPECTED_NEW_OWNER = accounts[3];
 
   let instance: Wallet;
 
   beforeEach(async () => {
-    instance = await WalletContract.new(OWNERS, { from: deployerAccount });
+    instance = await WalletContract.new(OWNERS, { from: OWNER_TWO });
   });
 
   it('assigns proper owners on creation', async () => {
@@ -67,5 +66,13 @@ contract('Wallet', (accounts) => {
     assertEtherAlmostEqual(balanceAfter, balanceBefore.sub(DEPOSIT_AMOUNT).add(TRANSFER_AMOUNT));
   });
 
+  it('changes owners', async () => {
+    const ownerBefore = await instance.owners(2);
+    await instance.changeOwner(NEW_OWNERS, { from: OWNER_ONE });
+    await instance.changeOwner(NEW_OWNERS, { from: OWNER_TWO });
+    await instance.changeOwner(NEW_OWNERS, { from: OWNER_THREE });
+    const ownerAfter = await instance.owners(2);
 
+    assert.notEqual(ownerBefore, ownerAfter);
+  });
 });

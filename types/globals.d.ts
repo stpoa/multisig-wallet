@@ -66,6 +66,7 @@ declare interface Wallet {
   owners(index: number, options?: TransactionOptions): Promise<string>;
   isOwner(address: string, options?: TransactionOptions): boolean;
   transfer(destination: string, value: number, options?: TransactionOptions): Promise<TransactionResult>;
+  changeOwner(newOwners: string[], options?: TransactionOptions): Promise<TransactionResult>
   deposit(options?: TransactionOptions): Promise<TransactionResult>;
 }
 
