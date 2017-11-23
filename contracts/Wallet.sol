@@ -11,7 +11,6 @@ contract Wallet {
     }
 
     //--- Variables
-    address public creator;
     address[] public owners;
     mapping (address => bool) public isOwner;
     mapping (bytes32 => Transaction) public transactions;
@@ -33,7 +32,6 @@ contract Wallet {
 
     //--- Methods
     function Wallet(address[] _owners) public {
-        creator = msg.sender;
         setOwners(_owners);
     }
 

@@ -22,11 +22,6 @@ contract('Wallet', (accounts) => {
     instance = await WalletContract.new(OWNERS, { from: deployerAccount });
   });
 
-  it('creates a wallet and assigns an owner', async () => {
-    const creator: string = await instance.creator();
-    assert.equal(creator, deployerAccount);
-  });
-
   it('assigns proper owners on creation', async () => {
     const ownerOne: string = await instance.owners(0);
     const ownerTwo: string = await instance.owners(1);
