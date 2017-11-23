@@ -9,7 +9,6 @@ contract('Wallet', (accounts) => {
   const OWNER_TWO = accounts[1];
   const OWNER_THREE = accounts[2];
   const NEW_OWNER = accounts[3];
-  const NOT_OWNER = accounts[9];
   const OWNERS = [OWNER_ONE, OWNER_TWO, OWNER_THREE];
   const NEW_OWNERS = [OWNER_ONE, OWNER_TWO, NEW_OWNER];
   const DEPOSIT_AMOUNT = fromEtherToWei(5);
@@ -41,15 +40,6 @@ contract('Wallet', (accounts) => {
     assertEtherAlmostEqual(balanceAfter, balanceBefore.sub(DEPOSIT_AMOUNT));
   });
 
-  it('confirms a transfer', async () => {
-    const trans = await instance.transfer(OWNER_ONE, TRANSFER_AMOUNT, { from: OWNER_ONE });
-    const log = findLastLog(trans, 'TransferCalled');
-    const event = log.args;
-    const confirmationsCount = await instance.confirmationsCount(event.transactionHash);
-
-    assert.equal('1', confirmationsCount.toString());
-  });
-
   it('starts a transaction', async () => {
     const balanceBefore = await getBalance(OWNER_ONE);
 
@@ -67,12 +57,11 @@ contract('Wallet', (accounts) => {
   });
 
   it('changes owners', async () => {
-    const ownerBefore = await instance.owners(2);
-    await instance.changeOwner(NEW_OWNERS, { from: OWNER_ONE });
-    await instance.changeOwner(NEW_OWNERS, { from: OWNER_TWO });
-    await instance.changeOwner(NEW_OWNERS, { from: OWNER_THREE });
-    const ownerAfter = await instance.owners(2);
+    await instance.changeOwners(NEW_OWNERS, { from: OWNER_ONE });
+    await instance.changeOwners(NEW_OWNERS, { from: OWNER_TWO });
+    await instance.changeOwners(NEW_OWNERS, { from: OWNER_THREE });
+    const actualOwners = await instance.getOwners();
 
-    assert.notEqual(ownerBefore, ownerAfter);
+    assert.deepEqual(actualOwners, NEW_OWNERS);
   });
 });

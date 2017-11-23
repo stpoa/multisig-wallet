@@ -63,10 +63,11 @@ declare interface WalletContract extends Contract<Wallet> {
 declare interface Wallet {
   creator(options?: TransactionOptions): Promise<string>;
   confirmationsCount(transactionHahs: String): Promise<BigNumber>;
+  getOwners(options?: TransactionOptions): Promise<string[]>;
   owners(index: number, options?: TransactionOptions): Promise<string>;
   isOwner(address: string, options?: TransactionOptions): boolean;
   transfer(destination: string, value: number, options?: TransactionOptions): Promise<TransactionResult>;
-  changeOwner(newOwners: string[], options?: TransactionOptions): Promise<TransactionResult>
+  changeOwners(newOwners: string[], options?: TransactionOptions): Promise<TransactionResult>
   deposit(options?: TransactionOptions): Promise<TransactionResult>;
 }
 

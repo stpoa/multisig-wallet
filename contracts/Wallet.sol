@@ -3,17 +3,17 @@ pragma solidity 0.4.18;
 
 contract Wallet {
 
-    //--- Strcutures
+    //--- Structures
     struct TransactionProposal {
         mapping(address => bool) confirmedBy;
-        uint confirmationsCount;
+        uint256 confirmationsCount;
         bool initiated;
     }
 
     struct OwnersChangeProposal {
         bytes32 newOwnersHash;
         mapping (address => bool) votes;
-        uint votesCount;
+        uint256 votesCount;
     }
 
     //--- Variables
@@ -22,126 +22,126 @@ contract Wallet {
     OwnersChangeProposal public ownersChangeProposal;
 
     //--- Events
-    event Deposited(address user, uint value);
-    event Transferred(address destination, uint value);
+    event Deposited(address user, uint256 value);
+    event Transferred(address destination, uint256 value);
     event TransferCalled(bytes32 transactionHash, address user);
 
     //--- Modifiers
-    modifier onlyowner {
+    modifier onlyOwner {
         require(isOwner(msg.sender));
         _;
     }
 
     //--- Constructor
-    function Wallet (address[] _owners) public {
+    function Wallet(address[] _owners) public {
         setOwners(_owners);
     }
 
     //--- Public view methods
-    function isOwner (address _user) public view returns (bool) {
-        for (uint i = 0; i < owners.length; ++i) {
+    function isOwner(address _user) public view returns (bool) {
+        for (uint256 i = 0; i < owners.length; ++i) {
             if (owners[i] == _user) {
                 return true;
             }
         }
+
         return false;
     }
 
-    //--- Public methods for testing
-    function getBalance () public view returns (uint) {
-        return this.balance;
-    }
-
-    function confirmationsCount (bytes32 transactionHash) public view returns (uint) {
-        return transactions[transactionHash].confirmationsCount;
+    function getOwners() public view returns (address[]) {
+        return owners;
     }
 
     //--- Public payable methods
-    function deposit () public payable {
+    function deposit() public payable {
+        require(msg.value > 0);
+
         Deposited(msg.sender, msg.value);
     }
 
     //--- Public restricted to owner methods
-    function transfer (address destination, uint value) public onlyowner {
+    function transfer(address destination, uint256 value) public onlyOwner {
         bytes32 _transactionHash = keccak256(destination, value, owners);
 
-        // Check if user already confirmed
-        require(!transactions[_transactionHash].confirmedBy[msg.sender]);
+        TransactionProposal storage proposal = transactions[_transactionHash];
 
-        // Set transaciton to initiated
-        !transactions[_transactionHash].initiated && (transactions[_transactionHash].initiated = true);
+        // Check if user already confirmed
+        require(!proposal.confirmedBy[msg.sender]);
+
+        // Set transaction to initiated
+        if (!proposal.initiated) {
+            proposal.initiated = true;
+        }
 
         // Confirm transfer
-        transactions[_transactionHash].confirmedBy[msg.sender] = true;
-        transactions[_transactionHash].confirmationsCount++;
+        proposal.confirmedBy[msg.sender] = true;
+        proposal.confirmationsCount++;
 
         // Execute transfer
-        if (transferConfirmedByAll(_transactionHash)) {
+        if (transferConfirmedByAll(proposal)) {
             clearTransaction(_transactionHash);
-            executeTransfer(destination, value);
+
+            destination.transfer(value);
+            Transferred(destination, value);
         }
+
         TransferCalled(_transactionHash, msg.sender);
     }
 
-    function changeOwner (address[] _newOwners) public onlyowner {
-        bytes32 _newOwnersHash = keccak256(_newOwners, owners);
+    function changeOwners(address[] newOwners) public onlyOwner {
+        bytes32 newOwnersHash = keccak256(newOwners, owners);
 
-        if (_newOwnersHash == ownersChangeProposal.newOwnersHash) {
+        if (ownersChangeProposal.newOwnersHash == bytes32(0)) {
+            ownersChangeProposal.newOwnersHash = newOwnersHash;
+        } else {
+            require(newOwnersHash == ownersChangeProposal.newOwnersHash);
+
             // Check if not voted already
             require(!ownersChangeProposal.votes[msg.sender]);
-
-            // Vote for proposal
-            ownersChangeProposal.votes[msg.sender] = true;
-            ownersChangeProposal.votesCount++;
-        } else {
-            // Clear proposal and create new one
-            clearOwnersChangeProposal();
-            ownersChangeProposal.newOwnersHash = _newOwnersHash;
-            ownersChangeProposal.votes[msg.sender] = true;
-            ownersChangeProposal.votesCount = 1;
         }
 
+        // Vote for proposal
+        ownersChangeProposal.votes[msg.sender] = true;
+        ownersChangeProposal.votesCount++;
+
         if (changeOwnerConfirmedByAll()) {
-            // Clear proposal and execute owners change
             clearOwnersChangeProposal();
-            setOwners(_newOwners);
+            setOwners(newOwners);
         }
     }
 
-    function cancelChangeOwners () public onlyowner {
+    function cancelChangeOwners() public onlyOwner {
         clearOwnersChangeProposal();
     }
 
     //--- Private Methods
-    function transferConfirmedByAll (bytes32 transactionHash) private view returns (bool) {
-        return transactions[transactionHash].confirmationsCount == owners.length;
+    function transferConfirmedByAll(TransactionProposal storage proposal) private view returns (bool) {
+        return proposal.confirmationsCount == owners.length;
     }
 
-    function changeOwnerConfirmedByAll () private view returns (bool) {
+    function changeOwnerConfirmedByAll() private view returns (bool) {
         return ownersChangeProposal.votesCount == owners.length;
     }
 
-    function setOwners (address[] newOwners) private {
+    function setOwners(address[] newOwners) private {
         owners = newOwners;
     }
 
-    function clearOwnersChangeProposal () private {
-        for (uint i = 0; i < owners.length; ++i) {
+    function clearOwnersChangeProposal() private {
+        for (uint256 i = 0; i < owners.length; ++i) {
             delete ownersChangeProposal.votes[owners[i]];
         }
+
         delete ownersChangeProposal;
     }
 
-    function clearTransaction (bytes32 _transactionHash) private {
-        for (uint i = 0; i < owners.length; ++i) {
-            delete transactions[_transactionHash].confirmedBy[owners[i]];
+    function clearTransaction(bytes32 _transactionHash) private {
+        TransactionProposal storage proposal = transactions[_transactionHash];
+
+        for (uint256 i = 0; i < owners.length; ++i) {
+            delete proposal.confirmedBy[owners[i]];
         }
+
         delete transactions[_transactionHash];
     }
-
-    function executeTransfer (address destination, uint value) private onlyowner {
-        destination.transfer(value);
-        Transferred(destination, value);
-    }
-
 }
