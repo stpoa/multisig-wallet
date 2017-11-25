@@ -32,16 +32,19 @@ contract Wallet {
         _;
     }
 
+    modifier onlyWithPositiveValue {
+        require(msg.value > 0);
+        _;
+    }
+
     //--- Constructor
     function Wallet(address[] _owners) public {
-        setOwners(_owners);
+        owners = _owners;
     }
 
     //--- Fallback function
-    function() public payable {
-        if (msg.value > 0) {
-            Deposited(msg.sender, msg.value);
-        }
+    function() public payable onlyWithPositiveValue {
+        Deposited(msg.sender, msg.value);
     }
 
     //--- Public view methods
@@ -60,9 +63,7 @@ contract Wallet {
     }
 
     //--- Public payable methods
-    function deposit() public payable {
-        require(msg.value > 0);
-
+    function deposit() public payable onlyWithPositiveValue {
         Deposited(msg.sender, msg.value);
     }
 
@@ -113,7 +114,7 @@ contract Wallet {
 
         if (changeOwnerConfirmedByAll()) {
             clearOwnersChangeProposal();
-            setOwners(newOwners);
+            owners = newOwners;
         }
     }
 
@@ -128,10 +129,6 @@ contract Wallet {
 
     function changeOwnerConfirmedByAll() private view returns (bool) {
         return ownersChangeProposal.votesCount == owners.length;
-    }
-
-    function setOwners(address[] newOwners) private {
-        owners = newOwners;
     }
 
     function clearOwnersChangeProposal() private {
